@@ -109,6 +109,9 @@ _pnpm_deps_completion pnpm '' install
 check_has "bash: fallback para completion oficial" "${COMPREPLY[*]}" "fallback_official"
 unset -f _pnpm_completion
 
+check_missing "instalador: sem placeholder de repo" \
+  "$(grep '^REPO=' "$ROOT/install.sh")" "SEU-USUARIO"
+
 lib_version="$(node -p "require('$ROOT/lib/deps.js').VERSION")"
 installer_version="$(grep -m1 '^VERSION=' "$ROOT/install.sh" | cut -d'"' -f2)"
 control_version="$(awk '/^Version:/ {print $2}' "$ROOT/packaging/deb/DEBIAN/control")"

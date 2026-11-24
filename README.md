@@ -22,7 +22,7 @@ node_modules/.bin: /home/voce/projeto/node_modules/.bin (18 binarios)
 
 ## Instalação
 
-Troque `SEU-USUARIO` pelo seu usuário do GitHub antes de publicar.
+Se fizer fork, troque `NickolasMuzzi` pelo seu usuário no `install.sh`, no `DEBIAN/control` e neste README.
 
 ### Via curl (instala o .deb com apt)
 
