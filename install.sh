@@ -5,7 +5,7 @@ set -euo pipefail
 # Pode ser executado direto via curl, sem precisar do resto do repo.
 NAME="pnpm-deps-completion"
 VERSION="1.0.0"
-REPO="${PNPM_DEPS_REPO:-SEU-USUARIO/pnpm-deps-completion}"
+REPO="${PNPM_DEPS_REPO:-NickolasMuzzi/pnpm-deps-completion}"
 BRANCH="${PNPM_DEPS_BRANCH:-main}"
 DEB_NAME="${NAME}_${VERSION}_all.deb"
 DEB_URL="https://raw.githubusercontent.com/$REPO/$BRANCH/dist/$DEB_NAME"

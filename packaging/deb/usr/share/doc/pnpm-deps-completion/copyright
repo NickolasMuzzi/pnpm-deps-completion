@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: pnpm-deps-completion
-Source: https://github.com/SEU-USUARIO/pnpm-deps-completion
+Source: https://github.com/NickolasMuzzi/pnpm-deps-completion
 
 Files: *
 Copyright: 2026 pnpm-deps-completion contributors
