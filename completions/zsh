@@ -1,0 +1,86 @@
+#compdef pnpm pn pnx
+# pnpm-deps-completion - dependency name completion for pnpm (zsh).
+# Precisa do sistema de completion do zsh (compinit / oh-my-zsh).
+
+if [[ -n "${ZSH_VERSION:-}" ]]; then
+  _pnpm_deps_helper="${PNPM_DEPS_COMPLETION_HELPER:-}"
+  if [[ -z "$_pnpm_deps_helper" ]]; then
+    _pnpm_deps_dir="${${(%):-%x}:A:h}"
+    if [[ -f "$_pnpm_deps_dir/../lib/deps.js" ]]; then
+      _pnpm_deps_helper="$_pnpm_deps_dir/../lib/deps.js"
+    elif [[ -f /usr/share/pnpm-deps-completion/lib/deps.js ]]; then
+      _pnpm_deps_helper=/usr/share/pnpm-deps-completion/lib/deps.js
+    fi
+  fi
+
+  if ! (( $+functions[compdef] )); then
+    autoload -Uz compinit && compinit
+  fi
+
+  _pnpm_deps_completion() {
+    emulate -L zsh
+    setopt local_options no_nomatch
+
+    local cur="${words[CURRENT]:-}"
+    local cmd="${words[1]:-pnpm}"
+    local sub="" dir="" i word
+
+    if [[ "$cmd" == "pnx" ]]; then
+      sub="exec"
+    else
+      for (( i = 2; i < CURRENT; i++ )); do
+        word="${words[i]}"
+        case "$word" in
+          (-C|--dir)
+            if (( i + 1 < CURRENT )); then
+              dir="${words[i+1]}"
+              (( i++ ))
+            fi
+            ;;
+          (--dir=*) dir="${word#--dir=}" ;;
+          (-*) ;;
+          (*) [[ -z "$sub" ]] && sub="$word" ;;
+        esac
+      done
+    fi
+
+    local kind=""
+    case "$sub" in
+      (update|up|upgrade|remove|rm|uninstall|un|why) kind="deps" ;;
+      (exec|x) kind="bins" ;;
+    esac
+
+    if [[ -n "$kind" && -f "$_pnpm_deps_helper" ]]; then
+      local -a args=(--kind "$kind" --describe)
+      [[ -n "$dir" ]] && args+=(--cwd "$dir")
+      local out
+      out="$(node "$_pnpm_deps_helper" "${args[@]}" 2>/dev/null)" || return 0
+      [[ -n "$out" ]] || return 0
+      local -a candidates
+      candidates=( ${(f)out} )
+      _describe 'dependency' candidates
+      return 0
+    fi
+
+    if (( $+functions[_pnpm_completion] )); then
+      _pnpm_completion "$@"
+      return $?
+    fi
+
+    local -a reply
+    local si=$IFS
+    IFS=$'\n' reply=( $(COMP_CWORD=$((CURRENT - 1)) COMP_LINE="$BUFFER" COMP_POINT="$CURSOR" SHELL=zsh \
+      pnpm completion-server -- "${words[@]}" 2>/dev/null) )
+    IFS=$si
+    if [[ "${reply[1]:-}" == "__tabtab_complete_files__" ]]; then
+      _files
+    else
+      _describe 'values' reply
+    fi
+  }
+
+  # Funcao autoloadada quando o arquivo esta no fpath do zsh.
+  _pnpm_deps() { _pnpm_deps_completion "$@"; }
+
+  compdef _pnpm_deps_completion pnpm pn pnx
+fi

@@ -1,0 +1,14 @@
+Package: pnpm-deps-completion
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: all
+Depends: nodejs (>= 18), bash-completion
+Recommends: pnpm, zsh
+Maintainer: pnpm-deps-completion contributors <maintainer@example.com>
+Homepage: https://github.com/SEU-USUARIO/pnpm-deps-completion
+Description: pnpm dependency name completion for bash and zsh
+ Completes package names from a project's package.json after pnpm update,
+ remove and why, and binaries from node_modules/.bin after pnpm exec.
+ Installs completion files read by bash-completion and zsh, plus a
+ pnpm-deps command available on PATH.

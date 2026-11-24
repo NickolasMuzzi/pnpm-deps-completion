@@ -1,0 +1,79 @@
+# pnpm-deps-completion - dependency name completion for pnpm (bash).
+# Pode ser sourceado mais de uma vez.
+
+if [[ -n "${BASH_VERSION:-}" ]]; then
+  _pnpm_deps_helper="${PNPM_DEPS_COMPLETION_HELPER:-}"
+  if [[ -z "$_pnpm_deps_helper" ]]; then
+    _pnpm_deps_source="${BASH_SOURCE[0]}"
+    command -v readlink >/dev/null 2>&1 && _pnpm_deps_source="$(readlink -f "$_pnpm_deps_source")"
+    _pnpm_deps_dir="$(cd -- "$(dirname -- "$_pnpm_deps_source")" >/dev/null 2>&1 && pwd)"
+    if [[ -f "$_pnpm_deps_dir/../lib/deps.js" ]]; then
+      _pnpm_deps_helper="$_pnpm_deps_dir/../lib/deps.js"
+    elif [[ -f /usr/share/pnpm-deps-completion/lib/deps.js ]]; then
+      _pnpm_deps_helper=/usr/share/pnpm-deps-completion/lib/deps.js
+    fi
+  fi
+
+  _pnpm_deps_completion() {
+    local cur="${2:-}"
+    local cmd="${1:-pnpm}"
+    local sub="" dir="" i word
+    local -a words=("${COMP_WORDS[@]:-}")
+    local cword="${COMP_CWORD:-$((${#words[@]} - 1))}"
+
+    if [[ "$cmd" == "pnx" ]]; then
+      sub="exec"
+    else
+      for (( i = 1; i < cword; i++ )); do
+        word="${words[i]}"
+        case "$word" in
+          -C|--dir)
+            if (( i + 1 < cword )); then
+              dir="${words[i+1]}"
+              (( i++ ))
+            fi
+            ;;
+          --dir=*) dir="${word#--dir=}" ;;
+          -*) ;;
+          *)
+            [[ -z "$sub" ]] && sub="$word"
+            ;;
+        esac
+      done
+    fi
+
+    local kind=""
+    case "$sub" in
+      update|up|upgrade|remove|rm|uninstall|un|why) kind="deps" ;;
+      exec|x) kind="bins" ;;
+    esac
+
+    if [[ -n "$kind" && -f "$_pnpm_deps_helper" ]]; then
+      local -a args=(--kind "$kind")
+      [[ -n "$dir" ]] && args+=(--cwd "$dir")
+      local out
+      out="$(node "$_pnpm_deps_helper" "${args[@]}" 2>/dev/null)" || return 0
+      COMPREPLY=( $(compgen -W "$out" -- "$cur") )
+      return 0
+    fi
+
+    if declare -F _pnpm_completion >/dev/null 2>&1; then
+      _pnpm_completion "$@"
+      return $?
+    fi
+
+    if command -v pnpm >/dev/null 2>&1; then
+      local IFS=$'\n'
+      COMPREPLY=( $(COMP_CWORD="$cword" COMP_LINE="${COMP_LINE:-}" COMP_POINT="${COMP_POINT:-0}" SHELL=bash \
+        pnpm completion-server -- "${words[@]:0:cword+1}" 2>/dev/null) )
+      if [[ "${COMPREPLY[0]:-}" == "__tabtab_complete_files__" ]]; then
+        COMPREPLY=( $(compgen -f -- "$cur") )
+      fi
+    fi
+  }
+
+  # Nome exigido pelo carregamento automatico do bash-completion.
+  _pnpm() { _pnpm_deps_completion "$@"; }
+
+  complete -o default -F _pnpm_deps_completion pnpm pn pnx
+fi

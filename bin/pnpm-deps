@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+'use strict';
+
+const path = require('node:path');
+const lib = require(path.join(__dirname, '..', 'lib', 'deps.js'));
+
+const { VERSION, collectBins, collectDeps, findUp, run } = lib;
+
+const HELP = `Uso: pnpm-deps [deps|bins] [opcoes]
+
+Lista nomes do projeto atual, um por linha.
+
+Comandos:
+  deps       dependencias do package.json (padrao)
+  bins       binarios do node_modules/.bin
+  doctor     mostra versao, caminhos e contagens
+
+Opcoes:
+  --cwd DIR     comeca a busca em DIR (padrao: diretorio atual)
+  --describe    inclui a origem depois de ":"
+  -v, --version
+  -h, --help
+`;
+
+function fail(message) {
+  process.stderr.write(`pnpm-deps: ${message}\n`);
+  process.exitCode = 2;
+}
+
+function main(argv) {
+  if (argv[0] === 'doctor') {
+    const manifest = findUp(process.cwd(), ['package.json']);
+    const binDir = findUp(process.cwd(), ['node_modules', '.bin']);
+    const deps = collectDeps(manifest);
+    const bins = collectBins(binDir);
+    process.stdout.write([
+      `pnpm-deps ${VERSION}`,
+      `helper: ${path.join(__dirname, '..', 'lib', 'deps.js')}`,
+      `package.json: ${manifest || 'nao encontrado'} (${deps.length} dependencias)`,
+      `node_modules/.bin: ${binDir || 'nao encontrado'} (${bins.length} binarios)`,
+    ].join('\n') + '\n');
+    return;
+  }
+
+  let kind = 'deps';
+  let cwd = process.cwd();
+  let describe = false;
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === 'deps' || arg === 'bins') {
+      kind = arg;
+    } else if (arg === '--kind') {
+      kind = argv[i + 1];
+      i += 1;
+    } else if (arg === '--cwd') {
+      cwd = argv[i + 1];
+      i += 1;
+    } else if (arg === '--describe') {
+      describe = true;
+    } else if (arg === '-v' || arg === '--version') {
+      process.stdout.write(`${VERSION}\n`);
+      return;
+    } else if (arg === '-h' || arg === '--help') {
+      process.stdout.write(HELP);
+      return;
+    } else {
+      fail(`argumento desconhecido: ${arg}`);
+      return;
+    }
+  }
+
+  if (kind !== 'deps' && kind !== 'bins') {
+    fail('kind invalido (use deps ou bins)');
+    return;
+  }
+  if (!cwd) {
+    fail('--cwd requer um diretorio');
+    return;
+  }
+
+  const args = ['--kind', kind, '--cwd', cwd];
+  if (describe) args.push('--describe');
+  run(args);
+}
+
+main(process.argv.slice(2));
